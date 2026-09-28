@@ -10,9 +10,18 @@
 					<div class="windowbg">
 						<div class="post_wrapper">
 							<div class="poster">
-								<h4>{{{user_info.character_name}}}</h4>
+								<h4>{{#if (gt (count context.post_characters) 1)}}{{{txt.posting_as_generic}}}{{else}}{{{user_info.character_name}}}{{/if}}</h4>
 								<div class="user_info_arrow"></div>
 								<ul class="user_info">
+					{{#if (gt (count context.post_characters) 1)}}
+									<li class="user_selector">
+										<select name="character_id" class="character_selector">
+											{{#each context.post_characters}}
+											<option value="{{@key}}"{{#if (eq_coerce @key ../user_info.id_character)}} selected{{/if}}>{{{name}}}</option>
+											{{/each}}
+										</select>
+									</li>
+					{{/if}}
 
 					{{! avatar }}
 					{{#if (and modSettings.show_user_images options.show_avatars)}}
@@ -45,6 +54,11 @@
 									<input type="hidden" name="last_msg" value="{{context.topic_last_message}}">
 									{{session_form}}
 									<input type="hidden" name="seqnum" value="{{context.form_sequence_number}}">
+					{{#unless (gt (count context.post_characters) 1)}}
+						{{#each context.post_characters}}
+									<input type="hidden" name="character_id" value="{{@key}}">
+						{{/each}}
+					{{/unless}}
 
 {{#if context.user.is_guest}}
 									<dl id="post_header">
@@ -132,3 +146,13 @@
 				var oEditorObject = oEditorHandle_{{context.post_box_name}};
 				var oJumpAnchor = "quickreply";
 			</script>
+{{#if (gt (count context.post_characters) 1)}}
+			<script>
+				var qr_characters = {{{json context.post_characters}}};
+				$("#quickReplyOptions .character_selector").on("change", function() {
+					var char_id = $(this).val();
+					if (qr_characters.hasOwnProperty(char_id))
+						$("#quickReplyOptions .poster .avatar img").attr("src", qr_characters[char_id].avatar);
+				});
+			</script>
+{{/if}}

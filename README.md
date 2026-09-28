@@ -27,4 +27,128 @@ Contributions to documentation are licensed under [CC-by-SA 3](https://creativec
 * Imagick or MagickWand for ImageMagick support
 * APCu/memcache/Redis/SQLite 3/Zend SHM cache
 
+## Docker (non-interactive install)
 
+StoryBB can run as a Docker container. On first boot it writes `Settings.php` from environment variables, creates the schema, seeds default data, and creates an admin account — no browser installer.
+
+The default Compose file runs **only the web app** and expects an **external MySQL** (for example DigitalOcean Managed MySQL). A local MariaDB overlay is available for development.
+
+### Security model
+
+The container is built so that a compromised PHP request cannot modify the forum's code:
+
+* The root filesystem is read-only (`read_only: true`), with all Linux capabilities dropped except the few Apache needs, and `no-new-privileges`.
+* Code is owned by `root`; Apache/PHP workers run as `www-data` and can only write to the upload mounts.
+* `Settings.php` lives in the config volume (symlinked into the document root), owned `root:www-data` and mode `0640`. The admin panel cannot rewrite it; edit it on the host instead.
+* `attachments/`, `cache/` and `cache/files/` are never served directly (StoryBB streams them through PHP). `custom_avatar/` is served but PHP and scripts are disabled there.
+* `cache/` is a tmpfs: compiled templates and other generated PHP are discarded on every restart. Persistent uploads that StoryBB keeps in `cache/files/` (smileys, favicons, affiliate images) are a separate volume.
+* PHP shell functions (`exec`, `system`, `proc_open`, ...) are disabled.
+
+Redeploying (`docker compose up -d --build`) always starts from a clean copy of the code.
+
+### DigitalOcean Droplet (recommended)
+
+A 1 GB / 1 vCPU Basic droplet ($6/month) plus a 10 GB Block Storage volume ($1/month) is enough for a small-to-medium forum when the database is DigitalOcean Managed MySQL.
+
+1. **Database.** Create (or reuse) a Managed MySQL database and user for StoryBB. Add the droplet to the database's Trusted Sources. DO managed MySQL listens on port `25060`.
+2. **Droplet and firewall.** Create an Ubuntu droplet with SSH-key login only. Attach a Cloud Firewall allowing inbound TCP 22, 80 and 443 (and UDP 443 for HTTP/3).
+3. **Block Storage.** Attach a volume, then mount it at `/mnt/storybb` with `noexec,nosuid,nodev` so nothing on it can ever run as a program. In `/etc/fstab`:
+
+   ```
+   /dev/disk/by-id/scsi-0DO_Volume_storybb /mnt/storybb ext4 defaults,nofail,discard,noatime,nodev,nosuid,noexec 0 2
+   ```
+
+   Then `sudo mkdir -p /mnt/storybb && sudo mount -a`.
+4. **Swap.** Building the image compiles PHP extensions, which can exceed 1 GB:
+
+   ```bash
+   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   ```
+5. **Host updates.** `sudo apt install unattended-upgrades` and install Docker Engine with the Compose plugin.
+6. **Run StoryBB.** Point your domain's DNS at the droplet, then:
+
+   ```bash
+   cp .env.example .env
+   # Set STORYBB_DOMAIN and STORYBB_BOARDURL=https://<domain>
+   # Set STORYBB_DB_SERVER / STORYBB_DB_PORT / STORYBB_DB_NAME / STORYBB_DB_USER / STORYBB_DB_PASSWD
+   # Set a strong STORYBB_ADMIN_PASSWORD
+   docker compose -f docker-compose.yml -f docker-compose.droplet.yml up -d --build
+   ```
+
+Caddy obtains a TLS certificate automatically and is the only thing listening publicly; the StoryBB container is reachable only on the internal Docker network. Everything that must persist is under `/mnt/storybb`: `attachments/`, `files/`, `custom_avatar/`, `config/Settings.php` and `caddy/` (certificates). Enable volume snapshots to back it up.
+
+The default `docker-compose.yml` on its own runs the same hardened container with Docker named volumes and publishes port `8787`, for use behind any other reverse proxy.
+
+### Moving from an existing install
+
+When pointing at a database from an older install:
+
+* **Do not copy code or PHP files from the old server**, especially if it was ever compromised. Copy only the upload data into `/mnt/storybb/attachments/` (`*.dat` files and avatar images), and check for stray `.php`, `.phtml` or `.htaccess` files before copying.
+* An install from the current codebase (`sbbVersion` setting) is detected and left alone; the installer only writes a fresh `Settings.php` from your environment variables.
+* **Legacy installs** from 2017–2018 builds (which record `smfVersion`, e.g. `3.0 Alpha 1`) must be migrated first. The container refuses to start against one until you do. Back up the database (or migrate a fork of it), then:
+
+  ```bash
+  # Preview every change without touching the database
+  docker compose run --rm -e STORYBB_LEGACY_MIGRATE=dry-run web true
+
+  # Apply it, then start normally
+  docker compose run --rm -e STORYBB_LEGACY_MIGRATE=execute web true
+  docker compose up -d
+  ```
+
+  The migration (`php cli.php migrate:legacy`) converts tables to InnoDB/utf8mb4, creates the tables added since 2018, updates changed columns (negative values in columns that became unsigned are reported and set to 0), seeds default settings, policies, blocks, scheduled tasks and the `natural` theme, generates board URL slugs, points attachment and avatar folders at the container paths, recalculates forum stats and copies smileys into the new file store. Columns the current code no longer uses (member website, 2FA secrets, character age, message icons, post-count groups) are kept but made optional; nothing is dropped. It can be re-run safely if interrupted.
+
+  Custom smileys that aren't part of the default set need their images: copy the old `Smileys/<set>/` folder somewhere under `/mnt/storybb/attachments/` and add `-e STORYBB_LEGACY_SMILEYS_DIR=/var/www/html/attachments/<folder>` to the execute command.
+
+### Local development (app + MariaDB)
+
+```bash
+cp .env.example .env
+# For local DB overlay you can use:
+#   STORYBB_BOARDURL=http://localhost:8787
+#   STORYBB_DB_SERVER=db
+#   STORYBB_DB_PORT=3306
+#   STORYBB_DB_USER=storybb
+#   STORYBB_DB_PASSWD=storybb
+#   STORYBB_ADMIN_PASSWORD=changeme
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+Then open [http://localhost:8787](http://localhost:8787) and sign in with the admin account from `.env`.
+
+### Configuration
+
+All forum bootstrap settings are environment variables (see [`.env.example`](.env.example)):
+
+| Variable | Purpose |
+| --- | --- |
+| `STORYBB_BOARDURL` | Public URL of the forum (no trailing slash) |
+| `STORYBB_FORUM_NAME` | Forum display name |
+| `STORYBB_DB_*` | Database host, port, name, user, password, prefix |
+| `STORYBB_DB_SSL` / `STORYBB_DB_SSL_CA` | `1` to encrypt the MySQL connection (required for DO managed MySQL); optional CA certificate path to also verify the server |
+| `STORYBB_ADMIN_*` | First administrator username, password, email |
+| `STORYBB_FORCE_RECONFIG` | `1` to rewrite `Settings.php` from env on start |
+| `STORYBB_FORCE_REINSTALL` | `1` to drop/recreate the DB and reinstall (destructive; needs DROP privilege) |
+| `STORYBB_MAX_WORKERS` | Max concurrent Apache/PHP workers (default `20`, sized for 1 GB RAM) |
+| `STORYBB_DOMAIN` | Droplet overlay: hostname Caddy gets a TLS certificate for |
+| `STORYBB_DATA_DIR` | Droplet overlay: Block Storage mount point (default `/mnt/storybb`) |
+
+Compose files:
+
+* [`docker-compose.yml`](docker-compose.yml) — hardened `web` only (external MySQL, named volumes)
+* [`docker-compose.droplet.yml`](docker-compose.droplet.yml) — adds Caddy (HTTPS) and Block Storage bind mounts for a DigitalOcean droplet
+* [`docker-compose.local.yml`](docker-compose.local.yml) — adds local MariaDB for development
+
+### Notes
+
+* Set `STORYBB_BOARDURL` to the URL browsers actually use.
+* Do not place `other/install.php` in the web root; the Docker image intentionally omits the browser installer.
+* Change default admin credentials before exposing the stack publicly.
+* On Managed MySQL, create the empty database ahead of time if the app user cannot `CREATE DATABASE`.
+
+
+
+### Browser preview note
+
+In Cloud Agent environments, open the published Compose port (default **8787**), not bare `http://127.0.0.1/` without a port — host-network demos on port 80 are not always forwarded to your local browser.

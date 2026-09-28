@@ -57,6 +57,11 @@ class AdminWeb
 			{
 				$db_options['port'] = $global_config['db_port'];
 			}
+			if (!empty($global_config['db_ssl']))
+			{
+				$db_options['ssl'] = true;
+				$db_options['ssl_ca'] = $global_config['db_ssl_ca'];
+			}
 
 			$options = array_merge($db_options, ['persist' => $global_config['db_persist']]);
 

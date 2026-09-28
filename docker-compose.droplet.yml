@@ -1,0 +1,41 @@
+# DigitalOcean Droplet overlay: HTTPS via Caddy, persistent data on a Block
+# Storage volume mounted at STORYBB_DATA_DIR (default /mnt/storybb).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.droplet.yml up -d --build
+#
+# Mount the volume with nodev,nosuid,noexec (see README).
+
+services:
+  web:
+    # Only reachable through Caddy on the internal network.
+    ports: !reset []
+    volumes:
+      - ${STORYBB_DATA_DIR:-/mnt/storybb}/attachments:/var/www/html/attachments
+      - ${STORYBB_DATA_DIR:-/mnt/storybb}/files:/var/www/html/cache/files
+      - ${STORYBB_DATA_DIR:-/mnt/storybb}/custom_avatar:/var/www/html/custom_avatar
+      - ${STORYBB_DATA_DIR:-/mnt/storybb}/config:/var/storybb/config
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      STORYBB_DOMAIN: ${STORYBB_DOMAIN}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    tmpfs:
+      - /tmp:size=16m
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${STORYBB_DATA_DIR:-/mnt/storybb}/caddy/data:/data
+      - ${STORYBB_DATA_DIR:-/mnt/storybb}/caddy/config:/config

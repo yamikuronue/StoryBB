@@ -2740,7 +2740,7 @@ function censorText(&$text, $force = false)
 function loadDatabase()
 {
 	global $db_persist, $db_server, $db_user, $db_passwd;
-	global $db_type, $db_name, $db_prefix, $db_port, $smcFunc;
+	global $db_type, $db_name, $db_prefix, $db_port, $db_ssl, $db_ssl_ca, $smcFunc;
 
 	if (empty($smcFunc))
 	{
@@ -2758,6 +2758,12 @@ function loadDatabase()
 	// Add in the port if needed
 	if (!empty($db_port))
 		$db_options['port'] = $db_port;
+
+	if (!empty($db_ssl))
+	{
+		$db_options['ssl'] = true;
+		$db_options['ssl_ca'] = $db_ssl_ca ?? '';
+	}
 
 	try
 	{

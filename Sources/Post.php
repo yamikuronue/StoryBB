@@ -1276,9 +1276,17 @@ function Post2()
 	if (!$user_info['is_guest'])
 	{
 		$possible_characters = get_user_possible_characters($user_info['id'], $board);
-		if (!isset($possible_characters[$user_info['id_character']]))
+		$posting_character = isset($_POST['character_id']) ? (int) $_POST['character_id'] : $user_info['id_character'];
+		if (!isset($possible_characters[$posting_character]))
 		{
-			fatal_lang_error('cannot_post_as_character', false, [$user_info['character_name']]);
+			$posting_name = $user_info['character_name'];
+			if ($posting_character != $user_info['id_character'])
+			{
+				loadMemberContext($user_info['id']);
+				if (isset($memberContext[$user_info['id']]['characters'][$posting_character]['character_name']))
+					$posting_name = $memberContext[$user_info['id']]['characters'][$posting_character]['character_name'];
+			}
+			fatal_lang_error('cannot_post_as_character', false, [$posting_name]);
 		}
 	}
 
@@ -2093,11 +2101,10 @@ function Post2()
 	$character_id = $user_info['id_character'];
 	if (!empty($user_info['id']) && isset($_POST['character_id']))
 	{
-		// We've elected to override for this post. Does the character belong to this user?
+		// This post only: use the character chosen in the reply box, if they are allowed to post as them here.
 		$_POST['character_id'] = (int) $_POST['character_id'];
-		loadMemberData($user_info['id']);
-		loadMemberContext($user_info['id']);
-		if (isset($memberContext[$user_info['id']]['characters'][$_POST['character_id']]))
+		$possible_characters = get_user_possible_characters($user_info['id'], $board);
+		if (isset($possible_characters[$_POST['character_id']]))
 			$character_id = $_POST['character_id'];
 	}
 	$posterOptions = [

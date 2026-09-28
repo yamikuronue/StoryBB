@@ -23,6 +23,7 @@ use StoryBB\Schema\Table;
 use StoryBB\Schema\Column;
 use StoryBB\Schema\Index;
 use StoryBB\Schema\InvalidColumnTypeException;
+use StoryBB\Schema\InvalidIndexException;
 use StoryBB\StringLibrary;
 
 /**
@@ -108,6 +109,8 @@ class MySQL implements DatabaseAdapter
 			$db_server = 'p:' . $this->db_server;
 		}
 
+		$db_port = !empty($options['port']) ? (int) $options['port'] : $this->db_port;
+
 		$this->connection = mysqli_init();
 
 		$flags = MYSQLI_CLIENT_FOUND_ROWS;
@@ -115,7 +118,19 @@ class MySQL implements DatabaseAdapter
 		$success = false;
 
 		if ($this->connection) {
-			$success = mysqli_real_connect($this->connection, $db_server, $this->db_user, $this->db_passwd, '', $this->db_port, null, $flags);
+			if (!empty($options['ssl']))
+			{
+				// Without a CA the connection is encrypted but the server certificate is not verified.
+				$ssl_ca = !empty($options['ssl_ca']) ? $options['ssl_ca'] : null;
+				mysqli_ssl_set($this->connection, null, null, $ssl_ca, null, null);
+				$flags |= MYSQLI_CLIENT_SSL;
+				if ($ssl_ca === null)
+				{
+					$flags |= MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT;
+				}
+			}
+
+			$success = mysqli_real_connect($this->connection, $db_server, $this->db_user, $this->db_passwd, '', $db_port, null, $flags);
 		}
 
 		if ($success === false)
@@ -129,7 +144,7 @@ class MySQL implements DatabaseAdapter
 			$this->select_db($this->db_name);
 		}
 
-		mysqli_query($this->connection, "SET SESSION sql_mode = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'");
+		mysqli_query($this->connection, "SET SESSION sql_mode = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
 
 		mysqli_set_charset($this->connection, 'utf8mb4');
 	}
@@ -1579,6 +1594,16 @@ class MySQL implements DatabaseAdapter
 		);
 		while ($row = $this->fetch_assoc($result))
 		{
+			// MySQL 8.0.19+ omits integer display widths; assume the widest so no spurious resize is proposed.
+			if (preg_match('~^(tinyint|smallint|mediumint|int|bigint)(\s+unsigned)?$~i', $row['Type'], $int_match))
+			{
+				$widths = ['tinyint' => 4, 'smallint' => 6, 'mediumint' => 9, 'int' => 11, 'bigint' => 21];
+				$row['Type'] = $int_match[1] . '(' . $widths[strtolower($int_match[1])] . ')' . ($int_match[2] ?? '');
+			}
+
+			// The schema only models text/mediumtext and blob/mediumblob; converting to utf8mb4 can widen columns beyond those.
+			$row['Type'] = strtr(strtolower($row['Type']), ['longtext' => 'mediumtext', 'tinytext' => 'text', 'longblob' => 'mediumblob', 'tinyblob' => 'blob']);
+
 			if (preg_match('~(.+?)\s*\((\d+)\)(?:(?:\s*)?(unsigned))?~i', $row['Type'], $matches) === 1)
 			{
 				$type = $matches[1];

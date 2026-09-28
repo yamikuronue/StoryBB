@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * Settings.php template for Docker / non-interactive installs.
+ * Placeholders of the form {{NAME}} are replaced by docker/install.php.
+ *
+ * @package StoryBB (storybb.org) - A roleplayer's forum software
+ * @license 3-clause BSD (see accompanying LICENSE file)
+ */
+
+/********* Forum Info *********/
+$language = '{{LANGUAGE}}';
+$boardurl = '{{BOARDURL}}';
+$cookiename = '{{COOKIENAME}}';
+
+/********* Database Info *********/
+$db_type = 'mysql';
+$db_server = '{{DB_SERVER}}';
+$db_name = '{{DB_NAME}}';
+$db_user = '{{DB_USER}}';
+$db_passwd = '{{DB_PASSWD}}';
+$db_prefix = '{{DB_PREFIX}}';
+$db_persist = 0;
+{{DB_PORT_LINE}}
+$db_ssl = {{DB_SSL}};
+$db_ssl_ca = '{{DB_SSL_CA}}';
+
+/********* Cache Info *********/
+$cache_accelerator = '';
+$cache_enable = 0;
+$cache_memcached = '';
+$cache_redis = '';
+$cachedir = '{{BOARDDIR}}/cache';
+
+/********* Image Proxy *********/
+$image_proxy_enabled = true;
+$image_proxy_secret = '{{IMAGE_PROXY_SECRET}}';
+$image_proxy_maxsize = 5192;
+
+/********* Directories/Files *********/
+// Explicit paths: in Docker this file lives outside the document root and is
+// symlinked in, so dirname(__FILE__) would point at the config volume.
+$boarddir = '{{BOARDDIR}}';
+$sourcedir = '{{BOARDDIR}}/Sources';

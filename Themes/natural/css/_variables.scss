@@ -6,17 +6,17 @@ $content-background: #e9eef2 !default;
 
 $link-color: #346 !default;
 
-$primary-accent: #f00 !default;
+$primary-accent: #557ea0 !default;
 $primary-accent-contrast: #fff !default;
 $primary-accent-dark: darken($primary-accent, 10%) !default;
 $primary-accent-light: lighten($primary-accent, 10%) !default;
 
-$secondary-accent: #0f0 !default;
+$secondary-accent: #6d90ad !default;
 $secondary-accent-contrast: #fff !default;
 $secondary-accent-dark: darken($secondary-accent, 10%) !default;
 $secondary-accent-light: lighten($primary-accent, 10%) !default;
 
-$tertiary-accent: #00f !default;
+$tertiary-accent: #3e5a78 !default;
 $tertiary-accent-contrast: #fff !default;
 
 $primary-list-bg: #f8f8f8 !default;
@@ -66,7 +66,7 @@ $sticky-topic-bg: #f2fffb !default;
 $unapproved-topic-bg: #fff2f2 !default;
 $unapproved-post-bg: #ffcbcb !default;
 
-$poster-fg: red !default;
+$poster-fg: #c06002 !default;
 $post-divider-fg: $primary-border !default;
 
 $quote-border: $primary-accent !default;
