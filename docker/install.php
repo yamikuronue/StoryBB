@@ -30,6 +30,9 @@ if (PHP_SAPI !== 'cli')
 
 define('STORYBB', 1);
 
+// Read by docker/entrypoint.sh to offer migrate:legacy.
+const EXIT_LEGACY_INSTALL = 3;
+
 $boarddir = getenv('STORYBB_BOARDDIR') ?: '/var/www/html';
 $boarddir = rtrim($boarddir, '/');
 chdir($boarddir);
@@ -103,11 +106,16 @@ $db = $smcFunc['db'];
 
 if (!$force_reinstall)
 {
-	$installed_version = installed_version($db);
-	if ($installed_version !== null)
+	$versions = installed_versions($db);
+	if (!empty($versions['sbbVersion']))
 	{
-		echo "StoryBB already installed (version {$installed_version}); skipping schema/admin bootstrap.\n";
+		echo "StoryBB already installed (version {$versions['sbbVersion']}); skipping schema/admin bootstrap.\n";
 		exit(0);
+	}
+	if (!empty($versions['smfVersion']))
+	{
+		echo "Legacy StoryBB install found (smfVersion {$versions['smfVersion']}); it must be migrated before this version can run.\n";
+		exit(EXIT_LEGACY_INSTALL);
 	}
 
 	$existing_tables = existing_tables($db);
@@ -363,8 +371,10 @@ function connect_database(array $config)
 
 /**
  * Installs that predate the SMF renaming store their version as smfVersion.
+ *
+ * @return array<string, string> Version settings found, keyed by variable name.
  */
-function installed_version($db): ?string
+function installed_versions($db): array
 {
 	$result = $db->query('', '
 		SELECT variable, value
@@ -378,7 +388,7 @@ function installed_version($db): ?string
 
 	if ($result === false)
 	{
-		return null;
+		return [];
 	}
 
 	$versions = [];
@@ -388,15 +398,7 @@ function installed_version($db): ?string
 	}
 	$db->free_result($result);
 
-	foreach (['sbbVersion', 'smfVersion'] as $name)
-	{
-		if (!empty($versions[$name]))
-		{
-			return $versions[$name];
-		}
-	}
-
-	return null;
+	return $versions;
 }
 
 /**

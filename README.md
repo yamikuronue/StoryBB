@@ -85,17 +85,21 @@ The default `docker-compose.yml` on its own runs the same hardened container wit
 When pointing at a database from an older install:
 
 * **Do not copy code or PHP files from the old server**, especially if it was ever compromised. Copy only the upload data into `/mnt/storybb/attachments/` (`*.dat` files and avatar images), and check for stray `.php`, `.phtml` or `.htaccess` files before copying.
-* The database stores absolute paths from the old server. Update them to the container paths (use your table prefix in place of `sbb_`):
+* An install from the current codebase (`sbbVersion` setting) is detected and left alone; the installer only writes a fresh `Settings.php` from your environment variables.
+* **Legacy installs** from 2017–2018 builds (which record `smfVersion`, e.g. `3.0 Alpha 1`) must be migrated first. The container refuses to start against one until you do. Back up the database (or migrate a fork of it), then:
 
-  ```sql
-  SELECT variable, value FROM sbb_settings
-    WHERE variable IN ('attachmentUploadDir', 'custom_avatar_dir', 'custom_avatar_url', 'smileys_dir');
-  SELECT id_theme, variable, value FROM sbb_themes
-    WHERE variable IN ('theme_dir', 'theme_url', 'images_url');
+  ```bash
+  # Preview every change without touching the database
+  docker compose run --rm -e STORYBB_LEGACY_MIGRATE=dry-run web true
+
+  # Apply it, then start normally
+  docker compose run --rm -e STORYBB_LEGACY_MIGRATE=execute web true
+  docker compose up -d
   ```
 
-  Directory values should be under `/var/www/html` (e.g. `/var/www/html/attachments`, `/var/www/html/custom_avatar`, `/var/www/html/Themes/natural`), and URLs should start with your new `STORYBB_BOARDURL`. `attachmentUploadDir` is JSON, where `/` may appear escaped as `\/`.
-* The installer detects the existing install and skips creating tables and the admin account; it only writes a fresh `Settings.php` from your environment variables.
+  The migration (`php cli.php migrate:legacy`) converts tables to InnoDB/utf8mb4, creates the tables added since 2018, updates changed columns (negative values in columns that became unsigned are reported and set to 0), seeds default settings, policies, blocks, scheduled tasks and the `natural` theme, generates board URL slugs, points attachment and avatar folders at the container paths, recalculates forum stats and copies smileys into the new file store. Columns the current code no longer uses (member website, 2FA secrets, character age, message icons, post-count groups) are kept but made optional; nothing is dropped. It can be re-run safely if interrupted.
+
+  Custom smileys that aren't part of the default set need their images: copy the old `Smileys/<set>/` folder somewhere under `/mnt/storybb/attachments/` and add `-e STORYBB_LEGACY_SMILEYS_DIR=/var/www/html/attachments/<folder>` to the execute command.
 
 ### Local development (app + MariaDB)
 

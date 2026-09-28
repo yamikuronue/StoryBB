@@ -23,6 +23,7 @@ use StoryBB\Schema\Table;
 use StoryBB\Schema\Column;
 use StoryBB\Schema\Index;
 use StoryBB\Schema\InvalidColumnTypeException;
+use StoryBB\Schema\InvalidIndexException;
 use StoryBB\StringLibrary;
 
 /**
@@ -1596,9 +1597,12 @@ class MySQL implements DatabaseAdapter
 			// MySQL 8.0.19+ omits integer display widths; assume the widest so no spurious resize is proposed.
 			if (preg_match('~^(tinyint|smallint|mediumint|int|bigint)(\s+unsigned)?$~i', $row['Type'], $int_match))
 			{
-				$widths = ['tinyint' => 4, 'smallint' => 6, 'mediumint' => 9, 'int' => 11, 'bigint' => 20];
+				$widths = ['tinyint' => 4, 'smallint' => 6, 'mediumint' => 9, 'int' => 11, 'bigint' => 21];
 				$row['Type'] = $int_match[1] . '(' . $widths[strtolower($int_match[1])] . ')' . ($int_match[2] ?? '');
 			}
+
+			// The schema only models text/mediumtext and blob/mediumblob; converting to utf8mb4 can widen columns beyond those.
+			$row['Type'] = strtr(strtolower($row['Type']), ['longtext' => 'mediumtext', 'tinytext' => 'text', 'longblob' => 'mediumblob', 'tinyblob' => 'blob']);
 
 			if (preg_match('~(.+?)\s*\((\d+)\)(?:(?:\s*)?(unsigned))?~i', $row['Type'], $matches) === 1)
 			{

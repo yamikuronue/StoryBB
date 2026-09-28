@@ -33,6 +33,8 @@ services:
       STORYBB_FORCE_RECONFIG: ${STORYBB_FORCE_RECONFIG:-0}
       STORYBB_FORCE_REINSTALL: ${STORYBB_FORCE_REINSTALL:-0}
       STORYBB_MAX_WORKERS: ${STORYBB_MAX_WORKERS:-20}
+      STORYBB_LEGACY_MIGRATE: ${STORYBB_LEGACY_MIGRATE:-}
+      STORYBB_LEGACY_SMILEYS_DIR: ${STORYBB_LEGACY_SMILEYS_DIR:-}
     # Application code is immutable at runtime; only the mounts below are writable.
     read_only: true
     security_opt:

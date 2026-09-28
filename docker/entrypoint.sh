@@ -46,7 +46,27 @@ done
 unset MYSQL_PWD
 
 echo "Running StoryBB headless installer (idempotent)..."
-php "$BOARDDIR/docker/install.php"
+install_status=0
+php "$BOARDDIR/docker/install.php" || install_status=$?
+
+# 3 = legacy (smfVersion) database that needs migrate:legacy before it can be served.
+if [[ "$install_status" -eq 3 ]]; then
+	case "${STORYBB_LEGACY_MIGRATE:-}" in
+		execute)
+			php "$BOARDDIR/cli.php" migrate:legacy --execute ${STORYBB_LEGACY_SMILEYS_DIR:+--smileys-dir="$STORYBB_LEGACY_SMILEYS_DIR"}
+			;;
+		dry-run)
+			php "$BOARDDIR/cli.php" migrate:legacy ${STORYBB_LEGACY_SMILEYS_DIR:+--smileys-dir="$STORYBB_LEGACY_SMILEYS_DIR"}
+			exit 1
+			;;
+		*)
+			echo "Back up the database, then set STORYBB_LEGACY_MIGRATE=dry-run to preview or STORYBB_LEGACY_MIGRATE=execute to migrate." >&2
+			exit 1
+			;;
+	esac
+elif [[ "$install_status" -ne 0 ]]; then
+	exit "$install_status"
+fi
 
 # The web server may read its configuration but never rewrite it.
 chown root:www-data "$CONFIG_DIR"
