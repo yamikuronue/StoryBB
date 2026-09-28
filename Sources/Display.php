@@ -1039,8 +1039,9 @@ function Display()
 	if (!$user_info['is_guest'] && $context['can_reply'])
 	{
 		$possible_characters = get_user_possible_characters($user_info['id'], $board);
+		$context['post_characters'] = $possible_characters;
 
-		if (!isset($possible_characters[$user_info['id_character']]))
+		if (empty($possible_characters))
 		{
 			$context['can_reply'] = false;
 			$context['can_reply_unapproved'] = false;
@@ -1049,16 +1050,11 @@ function Display()
 		}
 		else
 		{
-			// Make sure we have some avatar to work with.
-			$context['current_avatar'] = '';
-			foreach ($memberContext[$context['user']['id']]['characters'] as $char_id => $character)
-			{
-				if ($char_id == $user_info['id_character'])
-				{
-					$context['current_avatar'] = $character['avatar'];
-					$context['current_groups'] = get_labels_and_badges(array_merge([$character['main_char_group']], explode(',', $character['char_groups'])));
-				}
-			}
+			// Prefer the character they are currently posting as; otherwise the first one allowed on this board.
+			$active_character = isset($possible_characters[$user_info['id_character']]) ? $user_info['id_character'] : key($possible_characters);
+			$context['current_avatar'] = $possible_characters[$active_character]['avatar'];
+			$character = $memberContext[$context['user']['id']]['characters'][$active_character];
+			$context['current_groups'] = get_labels_and_badges(array_merge([$character['main_char_group']], explode(',', $character['char_groups'])));
 		}
 	}
 

@@ -1931,6 +1931,11 @@ img.smiley {
 /* Quick reply area. */
 #quickreplybox {
 	clear: both;
+
+	.character_selector {
+		width: 100%;
+		max-width: 100%;
+	}
 }
 
 #quickReplyExpand {
