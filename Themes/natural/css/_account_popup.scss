@@ -4,6 +4,9 @@
 	width: 30em;
 	padding: 0;
 	border: none;
+	max-height: calc(100vh - 70px);
+	overflow-y: auto;
+	overscroll-behavior: contain;
 
 	.loading {
 		padding: 10px;
