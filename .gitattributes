@@ -15,3 +15,6 @@
 *.woff binary
 *.woff2 binary
 *.webp binary
+
+# Shell scripts run inside Linux containers
+*.sh text eol=lf

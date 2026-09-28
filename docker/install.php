@@ -255,6 +255,7 @@ function write_settings_file(string $boarddir, array $config): void
 		'{{DB_PREFIX}}' => php_string($config['db_prefix']),
 		'{{IMAGE_PROXY_SECRET}}' => php_string($config['image_proxy_secret']),
 		'{{DB_PORT_LINE}}' => $port_line,
+		'{{BOARDDIR}}' => php_string($boarddir),
 	];
 
 	$contents = strtr(file_get_contents($template), $replacements);
@@ -262,7 +263,7 @@ function write_settings_file(string $boarddir, array $config): void
 	{
 		fail('Unable to write Settings.php');
 	}
-	@chmod($boarddir . '/Settings.php', 0664);
+	@chmod($boarddir . '/Settings.php', 0640);
 }
 
 function php_string(string $value): string

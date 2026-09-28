@@ -1,0 +1,12 @@
+{$STORYBB_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Sets X-Forwarded-For / X-Forwarded-Proto for Apache's remoteip + HTTPS detection.
+	reverse_proxy web:80
+}

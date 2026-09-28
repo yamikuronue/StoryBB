@@ -28,7 +28,7 @@ $cache_accelerator = '';
 $cache_enable = 0;
 $cache_memcached = '';
 $cache_redis = '';
-$cachedir = dirname(__FILE__) . '/cache';
+$cachedir = '{{BOARDDIR}}/cache';
 
 /********* Image Proxy *********/
 $image_proxy_enabled = true;
@@ -36,13 +36,7 @@ $image_proxy_secret = '{{IMAGE_PROXY_SECRET}}';
 $image_proxy_maxsize = 5192;
 
 /********* Directories/Files *********/
-$boarddir = dirname(__FILE__);
-$sourcedir = dirname(__FILE__) . '/Sources';
-
-// Make sure the paths are correct... at least try to fix them.
-if (!file_exists($boarddir) && file_exists(dirname(__FILE__) . '/subscriptions.php'))
-	$boarddir = dirname(__FILE__);
-if (!file_exists($sourcedir) && file_exists($boarddir . '/Sources'))
-	$sourcedir = $boarddir . '/Sources';
-if (!file_exists($cachedir) && file_exists($boarddir . '/cache'))
-	$cachedir = $boarddir . '/cache';
+// Explicit paths: in Docker this file lives outside the document root and is
+// symlinked in, so dirname(__FILE__) would point at the config volume.
+$boarddir = '{{BOARDDIR}}';
+$sourcedir = '{{BOARDDIR}}/Sources';

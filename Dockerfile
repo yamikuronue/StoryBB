@@ -19,34 +19,35 @@ RUN apt-get update \
 		default-mysql-client \
 	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
 	&& docker-php-ext-install -j$(nproc) mysqli gd mbstring zip \
-	&& a2enmod rewrite headers \
+	&& a2enmod rewrite headers remoteip \
 	&& rm -rf /var/lib/apt/lists/*
 
-ENV APACHE_DOCUMENT_ROOT=/var/www/html
+ENV APACHE_DOCUMENT_ROOT=/var/www/html \
+	STORYBB_MAX_WORKERS=20
 WORKDIR /var/www/html
 
-# Allow .htaccess overrides for StoryBB routing
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-	&& sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
-	&& printf '%s\n' \
-		'<Directory /var/www/html>' \
-		'    Options FollowSymLinks' \
-		'    AllowOverride All' \
-		'    Require all granted' \
-		'</Directory>' \
-		> /etc/apache2/conf-available/storybb.conf \
-	&& a2enconf storybb
+COPY docker/apache-storybb.conf /etc/apache2/conf-available/storybb.conf
+COPY docker/php-storybb.ini /usr/local/etc/php/conf.d/zz-storybb.ini
+RUN a2enconf storybb
 
 COPY . /var/www/html
 
-# Writable runtime directories; never expose the web installer at the document root
-RUN mkdir -p attachments cache custom_avatar \
-	&& rm -f install.php \
-	&& chown -R www-data:www-data /var/www/html \
-	&& chmod -R ug+rwX attachments cache custom_avatar \
-	&& chmod +x /var/www/html/docker/entrypoint.sh
+# Code is owned by root and read-only to the web server user (www-data); only
+# the upload/cache mount points are writable. Settings.php is a symlink into
+# the config volume so it can be generated at runtime on a read-only rootfs.
+RUN set -eux; \
+	rm -f install.php Settings.php Settings_bak.php; \
+	mkdir -p attachments cache custom_avatar /var/storybb/config; \
+	ln -s /var/storybb/config/Settings.php Settings.php; \
+	chown -R root:root /var/www/html; \
+	chmod -R u=rwX,go=rX /var/www/html; \
+	chown www-data:www-data attachments cache custom_avatar; \
+	chmod 0750 attachments cache custom_avatar; \
+	chown root:www-data /var/storybb/config; \
+	chmod 0750 /var/storybb/config; \
+	chmod 0755 docker/entrypoint.sh
 
-VOLUME ["/var/www/html/attachments", "/var/www/html/cache", "/var/www/html/custom_avatar"]
+VOLUME ["/var/www/html/attachments", "/var/www/html/cache/files", "/var/www/html/custom_avatar", "/var/storybb/config"]
 
 EXPOSE 80
 
