@@ -25,6 +25,12 @@ composer.phar
 phpcs.phar
 phpmd.phar
 
+# Docker local env #
+####################
+.env
+.env.local
+
+
 # Compiled source #
 ###################
 *.com

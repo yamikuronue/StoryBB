@@ -1,0 +1,40 @@
+# Default stack: StoryBB web app only.
+# Point STORYBB_DB_* at your DigitalOcean Managed MySQL (or any external MySQL).
+#
+# Local all-in-one (app + MariaDB):
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${STORYBB_HOST_PORT:-8787}:80"
+    environment:
+      STORYBB_DB_SERVER: ${STORYBB_DB_SERVER}
+      STORYBB_DB_PORT: ${STORYBB_DB_PORT:-3306}
+      STORYBB_DB_NAME: ${STORYBB_DB_NAME:-storybb}
+      STORYBB_DB_USER: ${STORYBB_DB_USER}
+      STORYBB_DB_PASSWD: ${STORYBB_DB_PASSWD}
+      STORYBB_DB_PREFIX: ${STORYBB_DB_PREFIX:-sbb_}
+      STORYBB_BOARDURL: ${STORYBB_BOARDURL}
+      STORYBB_FORUM_NAME: ${STORYBB_FORUM_NAME:-StoryBB}
+      STORYBB_LANGUAGE: ${STORYBB_LANGUAGE:-en-us}
+      STORYBB_ADMIN_USERNAME: ${STORYBB_ADMIN_USERNAME:-admin}
+      STORYBB_ADMIN_PASSWORD: ${STORYBB_ADMIN_PASSWORD}
+      STORYBB_ADMIN_EMAIL: ${STORYBB_ADMIN_EMAIL}
+      STORYBB_SERVER_EMAIL: ${STORYBB_SERVER_EMAIL:-noreply@example.com}
+      STORYBB_IMAGE_PROXY_SECRET: ${STORYBB_IMAGE_PROXY_SECRET:-}
+      STORYBB_FORCE_RECONFIG: ${STORYBB_FORCE_RECONFIG:-0}
+      STORYBB_FORCE_REINSTALL: ${STORYBB_FORCE_REINSTALL:-0}
+    volumes:
+      - storybb_attachments:/var/www/html/attachments
+      - storybb_cache:/var/www/html/cache
+      - storybb_avatars:/var/www/html/custom_avatar
+      - storybb_settings:/var/storybb/config
+
+volumes:
+  storybb_attachments:
+  storybb_cache:
+  storybb_avatars:
+  storybb_settings:

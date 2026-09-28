@@ -1,0 +1,48 @@
+<?php
+
+/**
+ * Settings.php template for Docker / non-interactive installs.
+ * Placeholders of the form {{NAME}} are replaced by docker/install.php.
+ *
+ * @package StoryBB (storybb.org) - A roleplayer's forum software
+ * @license 3-clause BSD (see accompanying LICENSE file)
+ */
+
+/********* Forum Info *********/
+$language = '{{LANGUAGE}}';
+$boardurl = '{{BOARDURL}}';
+$cookiename = '{{COOKIENAME}}';
+
+/********* Database Info *********/
+$db_type = 'mysql';
+$db_server = '{{DB_SERVER}}';
+$db_name = '{{DB_NAME}}';
+$db_user = '{{DB_USER}}';
+$db_passwd = '{{DB_PASSWD}}';
+$db_prefix = '{{DB_PREFIX}}';
+$db_persist = 0;
+{{DB_PORT_LINE}}
+
+/********* Cache Info *********/
+$cache_accelerator = '';
+$cache_enable = 0;
+$cache_memcached = '';
+$cache_redis = '';
+$cachedir = dirname(__FILE__) . '/cache';
+
+/********* Image Proxy *********/
+$image_proxy_enabled = true;
+$image_proxy_secret = '{{IMAGE_PROXY_SECRET}}';
+$image_proxy_maxsize = 5192;
+
+/********* Directories/Files *********/
+$boarddir = dirname(__FILE__);
+$sourcedir = dirname(__FILE__) . '/Sources';
+
+// Make sure the paths are correct... at least try to fix them.
+if (!file_exists($boarddir) && file_exists(dirname(__FILE__) . '/subscriptions.php'))
+	$boarddir = dirname(__FILE__);
+if (!file_exists($sourcedir) && file_exists($boarddir . '/Sources'))
+	$sourcedir = $boarddir . '/Sources';
+if (!file_exists($cachedir) && file_exists($boarddir . '/cache'))
+	$cachedir = $boarddir . '/cache';

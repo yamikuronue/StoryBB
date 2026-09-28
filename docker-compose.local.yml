@@ -1,0 +1,39 @@
+# Optional local MariaDB for development machines.
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-storybb_root}
+      MYSQL_DATABASE: ${STORYBB_DB_NAME:-storybb}
+      MYSQL_USER: ${STORYBB_DB_USER:-storybb}
+      MYSQL_PASSWORD: ${STORYBB_DB_PASSWD:-storybb}
+    volumes:
+      - storybb_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  web:
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      STORYBB_DB_SERVER: ${STORYBB_DB_SERVER:-db}
+      STORYBB_DB_PORT: ${STORYBB_DB_PORT:-3306}
+      STORYBB_DB_NAME: ${STORYBB_DB_NAME:-storybb}
+      STORYBB_DB_USER: ${STORYBB_DB_USER:-storybb}
+      STORYBB_DB_PASSWD: ${STORYBB_DB_PASSWD:-storybb}
+      STORYBB_BOARDURL: ${STORYBB_BOARDURL:-http://localhost:8787}
+      STORYBB_ADMIN_USERNAME: ${STORYBB_ADMIN_USERNAME:-admin}
+      STORYBB_ADMIN_PASSWORD: ${STORYBB_ADMIN_PASSWORD:-changeme}
+      STORYBB_ADMIN_EMAIL: ${STORYBB_ADMIN_EMAIL:-admin@example.com}
+
+volumes:
+  storybb_db:
