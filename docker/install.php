@@ -101,10 +101,24 @@ if ($force_reinstall)
 App::start($boarddir, new \StoryBB\App\Installer);
 $db = $smcFunc['db'];
 
-if (is_installed($db, $config['db_prefix']) && !$force_reinstall)
+if (!$force_reinstall)
 {
-	echo "StoryBB already installed; skipping schema/admin bootstrap.\n";
-	exit(0);
+	$installed_version = installed_version($db);
+	if ($installed_version !== null)
+	{
+		echo "StoryBB already installed (version {$installed_version}); skipping schema/admin bootstrap.\n";
+		exit(0);
+	}
+
+	$existing_tables = existing_tables($db);
+	if ($existing_tables)
+	{
+		fail(
+			'Database ' . $config['db_name'] . ' already contains ' . count($existing_tables) . ' StoryBB tables with prefix "' . $config['db_prefix'] . '" (e.g. ' . implode(', ', array_slice($existing_tables, 0, 3)) . ') '
+			. 'but no sbbVersion/smfVersion setting, so it is not a recognisable install. Refusing to seed default data into it. '
+			. 'Check STORYBB_DB_NAME and STORYBB_DB_PREFIX, or use an empty database.'
+		);
+	}
 }
 
 $lang = $config['language'];
@@ -347,28 +361,58 @@ function connect_database(array $config)
 	return $db;
 }
 
-function is_installed($db, string $prefix): bool
+/**
+ * Installs that predate the SMF renaming store their version as smfVersion.
+ */
+function installed_version($db): ?string
 {
 	$result = $db->query('', '
-		SELECT value
+		SELECT variable, value
 		FROM {db_prefix}settings
-		WHERE variable = {string:name}
-		LIMIT 1',
+		WHERE variable IN ({array_string:names})',
 		[
-			'name' => 'sbbVersion',
+			'names' => ['sbbVersion', 'smfVersion'],
 			'db_error_skip' => true,
 		]
 	);
 
 	if ($result === false)
 	{
-		return false;
+		return null;
 	}
 
-	$row = $db->fetch_assoc($result);
+	$versions = [];
+	while ($row = $db->fetch_assoc($result))
+	{
+		$versions[$row['variable']] = $row['value'];
+	}
 	$db->free_result($result);
 
-	return !empty($row['value']);
+	foreach (['sbbVersion', 'smfVersion'] as $name)
+	{
+		if (!empty($versions[$name]))
+		{
+			return $versions[$name];
+		}
+	}
+
+	return null;
+}
+
+/**
+ * @return string[] Prefixed names of StoryBB schema tables already in the database.
+ */
+function existing_tables($db): array
+{
+	$existing = [];
+	foreach (Schema::get_tables() as $table)
+	{
+		if ($table->exists($db))
+		{
+			$existing[] = $db->get_prefix() . $table->get_table_name();
+		}
+	}
+	return $existing;
 }
 
 /**
@@ -392,7 +436,7 @@ function populate_database(string $boarddir, $db, array $config, array $txt): vo
 		}
 		else
 		{
-			$exists[] = $table->get_table_name();
+			$exists[] = $db->get_prefix() . $table->get_table_name();
 		}
 	}
 

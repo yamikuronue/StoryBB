@@ -143,7 +143,7 @@ class MySQL implements DatabaseAdapter
 			$this->select_db($this->db_name);
 		}
 
-		mysqli_query($this->connection, "SET SESSION sql_mode = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'");
+		mysqli_query($this->connection, "SET SESSION sql_mode = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
 
 		mysqli_set_charset($this->connection, 'utf8mb4');
 	}
@@ -1593,6 +1593,13 @@ class MySQL implements DatabaseAdapter
 		);
 		while ($row = $this->fetch_assoc($result))
 		{
+			// MySQL 8.0.19+ omits integer display widths; assume the widest so no spurious resize is proposed.
+			if (preg_match('~^(tinyint|smallint|mediumint|int|bigint)(\s+unsigned)?$~i', $row['Type'], $int_match))
+			{
+				$widths = ['tinyint' => 4, 'smallint' => 6, 'mediumint' => 9, 'int' => 11, 'bigint' => 20];
+				$row['Type'] = $int_match[1] . '(' . $widths[strtolower($int_match[1])] . ')' . ($int_match[2] ?? '');
+			}
+
 			if (preg_match('~(.+?)\s*\((\d+)\)(?:(?:\s*)?(unsigned))?~i', $row['Type'], $matches) === 1)
 			{
 				$type = $matches[1];
