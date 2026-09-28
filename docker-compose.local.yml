@@ -27,6 +27,7 @@ services:
     environment:
       STORYBB_DB_SERVER: ${STORYBB_DB_SERVER:-db}
       STORYBB_DB_PORT: ${STORYBB_DB_PORT:-3306}
+      STORYBB_DB_SSL: "0"
       STORYBB_DB_NAME: ${STORYBB_DB_NAME:-storybb}
       STORYBB_DB_USER: ${STORYBB_DB_USER:-storybb}
       STORYBB_DB_PASSWD: ${STORYBB_DB_PASSWD:-storybb}

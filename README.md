@@ -122,6 +122,7 @@ All forum bootstrap settings are environment variables (see [`.env.example`](.en
 | `STORYBB_BOARDURL` | Public URL of the forum (no trailing slash) |
 | `STORYBB_FORUM_NAME` | Forum display name |
 | `STORYBB_DB_*` | Database host, port, name, user, password, prefix |
+| `STORYBB_DB_SSL` / `STORYBB_DB_SSL_CA` | `1` to encrypt the MySQL connection (required for DO managed MySQL); optional CA certificate path to also verify the server |
 | `STORYBB_ADMIN_*` | First administrator username, password, email |
 | `STORYBB_FORCE_RECONFIG` | `1` to rewrite `Settings.php` from env on start |
 | `STORYBB_FORCE_REINSTALL` | `1` to drop/recreate the DB and reinstall (destructive; needs DROP privilege) |

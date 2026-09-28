@@ -108,6 +108,8 @@ class MySQL implements DatabaseAdapter
 			$db_server = 'p:' . $this->db_server;
 		}
 
+		$db_port = !empty($options['port']) ? (int) $options['port'] : $this->db_port;
+
 		$this->connection = mysqli_init();
 
 		$flags = MYSQLI_CLIENT_FOUND_ROWS;
@@ -115,7 +117,19 @@ class MySQL implements DatabaseAdapter
 		$success = false;
 
 		if ($this->connection) {
-			$success = mysqli_real_connect($this->connection, $db_server, $this->db_user, $this->db_passwd, '', $this->db_port, null, $flags);
+			if (!empty($options['ssl']))
+			{
+				// Without a CA the connection is encrypted but the server certificate is not verified.
+				$ssl_ca = !empty($options['ssl_ca']) ? $options['ssl_ca'] : null;
+				mysqli_ssl_set($this->connection, null, null, $ssl_ca, null, null);
+				$flags |= MYSQLI_CLIENT_SSL;
+				if ($ssl_ca === null)
+				{
+					$flags |= MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT;
+				}
+			}
+
+			$success = mysqli_real_connect($this->connection, $db_server, $this->db_user, $this->db_passwd, '', $db_port, null, $flags);
 		}
 
 		if ($success === false)

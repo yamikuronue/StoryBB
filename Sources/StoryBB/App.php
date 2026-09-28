@@ -81,6 +81,8 @@ class App
 			'db_passwd' => $db_passwd ?? '',
 			'db_prefix' => $db_prefix ?? 'sbb_',
 			'db_persist' => $db_persist ?? 0,
+			'db_ssl' => !empty($db_ssl),
+			'db_ssl_ca' => $db_ssl_ca ?? '',
 			'db_show_debug' => isset($db_show_debug) && $db_show_debug === true,
 			'cache_accelerator' => $cache_accelerator ?? '',
 			'cache_enable' => $cache_enable ?? 0,

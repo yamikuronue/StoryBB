@@ -22,6 +22,8 @@ $db_passwd = '{{DB_PASSWD}}';
 $db_prefix = '{{DB_PREFIX}}';
 $db_persist = 0;
 {{DB_PORT_LINE}}
+$db_ssl = {{DB_SSL}};
+$db_ssl_ca = '{{DB_SSL_CA}}';
 
 /********* Cache Info *********/
 $cache_accelerator = '';

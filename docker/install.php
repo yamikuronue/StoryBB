@@ -205,6 +205,8 @@ function load_env_config(): array
 		'db_user' => (string) getenv('STORYBB_DB_USER'),
 		'db_passwd' => (string) getenv('STORYBB_DB_PASSWD'),
 		'db_prefix' => $db_prefix,
+		'db_ssl' => env_flag('STORYBB_DB_SSL'),
+		'db_ssl_ca' => (string) (getenv('STORYBB_DB_SSL_CA') ?: ''),
 		'boardurl' => $boardurl,
 		'forum_name' => getenv('STORYBB_FORUM_NAME') ?: 'StoryBB',
 		'language' => getenv('STORYBB_LANGUAGE') ?: 'en-us',
@@ -255,6 +257,8 @@ function write_settings_file(string $boarddir, array $config): void
 		'{{DB_PREFIX}}' => php_string($config['db_prefix']),
 		'{{IMAGE_PROXY_SECRET}}' => php_string($config['image_proxy_secret']),
 		'{{DB_PORT_LINE}}' => $port_line,
+		'{{DB_SSL}}' => $config['db_ssl'] ? 'true' : 'false',
+		'{{DB_SSL_CA}}' => php_string($config['db_ssl_ca']),
 		'{{BOARDDIR}}' => php_string($boarddir),
 	];
 
@@ -295,9 +299,16 @@ function connect_database(array $config)
 		(int) $config['db_port']
 	);
 
+	$options = ['persist' => false];
+	if ($config['db_ssl'])
+	{
+		$options['ssl'] = true;
+		$options['ssl_ca'] = $config['db_ssl_ca'];
+	}
+
 	try
 	{
-		$db->connect(['persist' => false]);
+		$db->connect($options);
 		return $db;
 	}
 	catch (CouldNotSelectDatabaseException $e)
@@ -316,7 +327,7 @@ function connect_database(array $config)
 
 	try
 	{
-		$db->connect(['persist' => false, 'dont_select_db' => true, 'non_fatal' => true]);
+		$db->connect($options + ['dont_select_db' => true, 'non_fatal' => true]);
 	}
 	catch (Throwable $e)
 	{
