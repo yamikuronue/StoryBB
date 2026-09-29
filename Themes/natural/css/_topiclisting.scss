@@ -1,5 +1,14 @@
 /** Topic listing */
 
+.message_index_title,
+.topic-subject,
+.recent_title {
+	span[id^="msg_"] a {
+		font-size: 1.1em;
+		font-weight: bold;
+	}
+}
+
 @media screen and (max-width: 767px) {
 	#messageindex {
 		.first_poster {
