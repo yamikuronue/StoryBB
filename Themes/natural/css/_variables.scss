@@ -47,15 +47,17 @@ $header-fg: $primary-accent-contrast !default;
 $postarea-bg-even: $primary-list-bg !default;
 $postarea-bg-odd: $secondary-list-bg !default;
 
+$list-stripe: #d6e7f5 !default;
+
 $poster-bg-even: $menu-bg !default;
 $poster-bg-odd: $menu-bg !default;
 
 $board-bg-even: $menu-bg !default;
-$board-bg-odd: $menu-bg !default;
+$board-bg-odd: $list-stripe !default;
 $board-outline: none;
 
 $topic-bg-even: $menu-bg !default;
-$topic-bg-odd: $menu-bg !default;
+$topic-bg-odd: $list-stripe !default;
 $topic-outline: none;
 
 $error-color: red !default;
