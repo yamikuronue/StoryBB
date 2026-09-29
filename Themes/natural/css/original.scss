@@ -951,6 +951,11 @@ table.table_grid td {
 	padding: 3px;
 }
 
+table.table_grid tbody tr:nth-child(even),
+table tbody tr.windowbg:nth-child(even) {
+	background: $list-stripe;
+}
+
 /* Some predefined widths (mostly for tables) */
 .table_grid.half_content, .half_table {
 	width: 50%;
