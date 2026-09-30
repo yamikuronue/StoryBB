@@ -59,7 +59,15 @@ class PreferenceManager
 	{
 		$this->fill_cache($userid);
 
-		return self::$cache[$userid] + self::$cache[0];
+		$preferences = self::$cache[$userid] + self::$cache[0];
+
+		// The visual editor is the default unless someone has turned it off.
+		if (!isset($preferences['wysiwyg_default']))
+		{
+			$preferences['wysiwyg_default'] = '1';
+		}
+
+		return $preferences;
 	}
 
 	public function get_preference(int $userid, string $preference)
