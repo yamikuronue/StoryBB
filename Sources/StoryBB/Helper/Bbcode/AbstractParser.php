@@ -540,7 +540,13 @@ abstract class AbstractParser
 			[
 				'tag' => 'list',
 				'parameters' => [
-					'type' => ['match' => '(none|disc|circle|square|decimal|decimal-leading-zero|lower-roman|upper-roman|lower-alpha|upper-alpha|lower-greek|upper-greek|lower-latin|upper-latin|hebrew|armenian|georgian|cjk-ideographic|hiragana|katakana|hiragana-iroha|katakana-iroha)'],
+					'type' => [
+						'match' => '(none|disc|circle|square|decimal|decimal-leading-zero|lower-roman|upper-roman|lower-alpha|upper-alpha|lower-greek|upper-greek|lower-latin|upper-latin|hebrew|armenian|georgian|cjk-ideographic|hiragana|katakana|hiragana-iroha|katakana-iroha)',
+						// Editors often save a plain bullet list as type=none.
+						'validate' => function ($type) {
+							return strcasecmp($type, 'none') === 0 ? 'disc' : $type;
+						},
+					],
 				],
 				'before' => '<ul class="bbc_list" style="list-style-type: {type};">',
 				'after' => '</ul>',
