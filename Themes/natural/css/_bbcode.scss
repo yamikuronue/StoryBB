@@ -113,6 +113,11 @@ blockquote cite::before {
 	text-align: left;
 	padding: 0 0 0 35px;
 	list-style-type: disc;
+
+	&[style*="list-style-type: none"],
+	&[style*="list-style-type:none"] {
+		list-style-type: disc !important;
+	}
 }
 
 .bbc_float {
