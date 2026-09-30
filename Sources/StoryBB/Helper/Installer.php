@@ -125,11 +125,12 @@ class Installer
 				[0, 'return_to_post', 1],
 				[0, 'show_avatars', 1],
 				[0, 'show_signatures', 1],
+				[0, 'wysiwyg_default', '1'],
 			],
 			['id_preference'],
 			DatabaseAdapter::RETURN_NOTHING
 		);
 
-		return 4;
+		return 5;
 	}
 }
