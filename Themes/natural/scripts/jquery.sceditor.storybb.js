@@ -276,7 +276,7 @@ $.sceditor.plugins.bbcode.bbcode.set(
 			var code = 'ul';
 			var olTypes = new Array('decimal', 'decimal-leading-zero', 'lower-roman', 'upper-roman', 'lower-alpha', 'upper-alpha', 'lower-greek', 'upper-greek', 'lower-latin', 'upper-latin', 'hebrew', 'armenian', 'georgian', 'cjk-ideographic', 'hiragana', 'katakana', 'hiragana-iroha', 'katakana-iroha');
 
-			if (attrs.type) {
+			if (attrs.type && attrs.type !== 'none') {
 				style = ' style="list-style-type: ' + attrs.type + '"';
 
 				if (olTypes.indexOf(attrs.type) > -1)
@@ -299,10 +299,13 @@ $.sceditor.plugins.bbcode.bbcode.set(
 		isInline: false,
 		html: '<ul>{0}</ul>',
 		format: function (element, content) {
-			if ($(element[0]).css('list-style-type') == 'disc')
+			var type = $(element[0]).css('list-style-type');
+
+			// contenteditable reports "none" for a plain bullet list.
+			if (!type || type === 'disc' || type === 'none')
 				return '[list]' + content + '[/list]';
-			else
-				return '[list type=' + $(element[0]).css('list-style-type') + ']' + content + '[/list]';
+
+			return '[list type=' + type + ']' + content + '[/list]';
 		}
 	}
 );
